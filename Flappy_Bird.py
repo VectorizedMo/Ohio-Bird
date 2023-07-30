@@ -8,8 +8,6 @@ import random
 #Variables
 Clock = pygame.time.Clock()
 FPS = 240
-x = 300
-y = 300
 Height = 600
 Width = 600
 BirdHeight = 60
