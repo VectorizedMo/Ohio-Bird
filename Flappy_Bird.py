@@ -190,7 +190,7 @@ def main():
             pass
         if VaderBird.posY > 600 or VaderBird.posY < 0:
             running = False
-        pygame.display.flip()
+        pygame.display.update()
         Clock.tick(120)
 
 
