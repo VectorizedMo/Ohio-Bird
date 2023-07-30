@@ -25,6 +25,12 @@ Screen.fill((80,0,150))
 pygame.display.set_caption("Flappy Bird")
 PlayButtonRect = pygame.Rect(192,273,237,56)
 PlayButtonRect = pygame.draw.rect(Screen, (0,0,0), PlayButtonRect)
+PipeThickness = 30
+OpenSpaceRangeForPipe = (150,200)
+PipePerXSeconds = 1 
+PipeSpeed = 1.5
+
+
 
 #Lambda for resetting screen
 ResetScreen = lambda x,y: Screen.blit(FlappyBackground, (x,y))
@@ -54,20 +60,25 @@ class Bird:
         self.JumpPower = JumpPower
         self.JumpTime = JumpTime
         self.RectObject = pygame.Rect(self.posX+(0.18*BirdWidth), self.posY+(0.05*BirdHeight), BirdHeight/1.2, BirdHeight/1.7)
+        self.Jumping = False
     #Main Jump Method
     def Jump(self):
-        #self.posY -= self.JumpPower
+        if self.Jumping:
+            return None
+        self.Jumping = True
         InitialEpochTime = time.time()
         DividingLambda = lambda x,y:x/y
         MidTime = DividingLambda(self.JumpTime, 2)
         TickTime = 240
+        Multiplier = 1
         while (time.time() - InitialEpochTime) <= self.JumpTime:
             if (time.time() - InitialEpochTime) < MidTime:
-                self.posY -= self.JumpPower/(self.JumpTime*TickTime)
+                self.posY -= self.JumpPower/(self.JumpTime*TickTime) * Multiplier
             else:
-                self.posY -= self.JumpPower/(self.JumpTime*TickTime)
-
+                self.posY -= self.JumpPower/(self.JumpTime*TickTime) * Multiplier
+            Multiplier += 0.02
             Clock.tick(TickTime)
+        self.Jumping = False
     #Draw Character Method
     def Draw(self, window):
         self.RectObject = pygame.Rect(self.posX+(0.18*BirdWidth), self.posY+(0.05*BirdHeight), BirdHeight/1.2, BirdHeight/1.7)
@@ -77,7 +88,7 @@ class Bird:
 
 #Pipe Class
 class Pipe:
-    def __init__(self,width, height, color, LeftSpace, StartPoint):
+    def __init__(self,width, height, color, LeftSpace, StartPoint, Speed):
         self.Width = width
         self.color = color
         self.Height = height
@@ -88,13 +99,14 @@ class Pipe:
         self.ProgressionNumber = 0
         self.FirstRect = pygame.Rect(self.StartPoint,0, self.Width, self.FirstPipeLength)
         self.SecondRect = pygame.Rect(self.StartPoint, 600 - self.SecondPipeLength, self.Width, self.SecondPipeLength)
-    
+        self.PipeSpeed = Speed
     def InitializePipes(self):
         pygame.draw.rect(Screen, self.color, self.FirstRect)
         pygame.draw.rect(Screen, self.color, self.SecondRect)
     
+    #Main Pipe Method
     def UpdatePipes(self):
-        self.ProgressionNumber += 1.5
+        self.ProgressionNumber += self.PipeSpeed
         FirstPipe = pygame.Rect(self.StartPoint - self.ProgressionNumber,0, self.Width, self.FirstPipeLength)
         SecondPipe = pygame.Rect(self.StartPoint - self.ProgressionNumber, 600-self.SecondPipeLength, self.Width, self.SecondPipeLength)
         self.FirstRect = FirstPipe
@@ -108,22 +120,24 @@ class Pipe:
 def ProducePipe():
     time.sleep(0.5)
     while Running:
-        Pipes = Pipe(10, 10, (random.randint(1,255),random.randint(1,255),random.randint(1,255)), random.randint(150,200), 500)
+        Pipes = Pipe(PipeThickness, PipeThickness, (random.randint(1,255),random.randint(1,255),random.randint(1,255)), random.randint(OpenSpaceRangeForPipe[0], OpenSpaceRangeForPipe[1]), 500, PipeSpeed)
         PipesList.append(Pipes)
-        time.sleep(1)
+        time.sleep(PipePerXSeconds)
 
+#Removing Pipe Function
 def RemovePipe():
     time.sleep(2.5)
     while Running:
-        time.sleep(1)
+        time.sleep(PipePerXSeconds)
         PipesList.pop(0)
+
+#Accessory Function for collisions
+def WhichIndex(delay):
+    if delay > 1.4:
+        return 1
+    else:
+        return 2
     
-
-
-
-
-
-
 
 #Main Function
 def main():
@@ -134,7 +148,7 @@ def main():
     Gravity = 1
     GravityIncrease = 0.04
     ConstGravityIncrease = 0.04
-    VaderBird = Bird(220,300, BirdHeight, BirdWidth, FlappyBird, Gravity, 50, 0.05)
+    VaderBird = Bird(220,300, BirdHeight, BirdWidth, FlappyBird, Gravity, 50, 0.125)
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -170,8 +184,8 @@ def main():
             for Pipe in PipesList:
                 Pipe.UpdatePipes()
         try:
-            Collision1 = pygame.Rect.colliderect(VaderBird.RectObject, PipesList[len(PipesList)-2].FirstRect)
-            Collision2 = pygame.Rect.colliderect(VaderBird.RectObject, PipesList[len(PipesList)-2].SecondRect)
+            Collision1 = pygame.Rect.colliderect(VaderBird.RectObject, PipesList[len(PipesList)-WhichIndex(PipePerXSeconds)].FirstRect)
+            Collision2 = pygame.Rect.colliderect(VaderBird.RectObject, PipesList[len(PipesList)-WhichIndex(PipePerXSeconds)].SecondRect)
             if Collision1 or Collision2:
                 running = False
         except IndexError:
